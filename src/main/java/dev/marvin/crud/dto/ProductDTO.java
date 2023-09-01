@@ -13,9 +13,9 @@ public class ProductDTO {
     @NotBlank
     private String name;
     @Min(0)
-    private double price;
+    private Double price;
 
-    public ProductDTO(@NotBlank String name, @Min(0) double price) {
+    public ProductDTO(@NotBlank String name, @Min(0) Double price) {
         this.name = name;
         this.price = price;
     }
