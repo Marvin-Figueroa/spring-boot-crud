@@ -1,0 +1,29 @@
+package dev.marvin.crud.security.entity;
+
+import dev.marvin.crud.security.enums.RoleName;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "role")
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class Role {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @NotNull
+    private int id;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    private RoleName roleName;
+
+    public Role(@NotNull RoleName roleName) {
+        this.roleName = roleName;
+    }
+}
