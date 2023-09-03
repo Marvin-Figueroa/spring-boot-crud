@@ -1,8 +1,10 @@
 package dev.marvin.crud.security.entity;
 
 import dev.marvin.crud.security.enums.RoleName;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +19,6 @@ import lombok.Setter;
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @NotNull
     private int id;
     @NotNull
     @Enumerated(EnumType.STRING)
