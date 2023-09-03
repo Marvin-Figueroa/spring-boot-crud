@@ -6,8 +6,10 @@ import dev.marvin.crud.entity.Product;
 import dev.marvin.crud.service.ProductService;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.List;
 @RequestMapping("/products")
 @CrossOrigin(origins = "*")
 public class ProductController {
+    @Autowired
     ProductService productService;
 
     @GetMapping("")
@@ -36,12 +39,13 @@ public class ProductController {
     @GetMapping("/name/{name}")
     public ResponseEntity<?> getProductByName(@PathVariable("name") String name) {
         if(!productService.existsByName(name)) {
-            return new ResponseEntity<>(new Message("The product with the name " + name + "does not exist"), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new Message("The product with the name " + name + " does not exist"), HttpStatus.NOT_FOUND);
         }
         Product product = productService.getProductByName(name).get();
         return new ResponseEntity<>(product, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("")
     public ResponseEntity<Message> createProduct(@RequestBody ProductDTO productDTO) {
         if(StringUtils.isBlank(productDTO.getName())) {
@@ -61,6 +65,7 @@ public class ProductController {
 
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Message> updateProduct(@PathVariable("id") int id, @RequestBody ProductDTO productDTO) {
 
@@ -85,6 +90,7 @@ public class ProductController {
         return new ResponseEntity<>(new Message("The product was updated successfully"), HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Message> deleteProduct(@PathVariable("id") int id) {
         if(!productService.existsById(id)) {
