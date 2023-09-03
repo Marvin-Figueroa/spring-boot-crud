@@ -13,12 +13,13 @@ import java.util.Set;
 public class NewUser {
     @NotBlank
     private String name;
+    @NotBlank
+    private String username;
     @Email
     private String email;
     @NotBlank
     private String password;
-    @NotBlank
-    private String username;
+
     private Set<String> roles = new HashSet<>();
 
 
