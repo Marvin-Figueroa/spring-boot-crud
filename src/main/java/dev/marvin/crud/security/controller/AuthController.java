@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -53,22 +54,24 @@ public class AuthController {
   @PostMapping(value="/register")
   public ResponseEntity<Message> register(@Valid @RequestBody NewUser newUser, BindingResult bindingResult) {
     if(bindingResult.hasErrors()) {
-      return new ResponseEntity<Message>(new Message("Verify the data provided"), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<Message>(new Message("Valid email, name, username and password are required"), HttpStatus.BAD_REQUEST);
     }
+
     if(userService.existsByUsername(newUser.getUsername())) {
-      return new ResponseEntity<Message>(new Message("The username " + newUser.getUsername() + " is already registered"), HttpStatus.BAD_REQUEST);
+      return new ResponseEntity<Message>(new Message("The username [ " + newUser.getUsername() + " ] is already registered"), HttpStatus.BAD_REQUEST);
     }
     if(userService.existsByEmail(newUser.getEmail())) {
-      return new ResponseEntity<Message>(new Message("The user with email " + newUser.getEmail() + " is already registered"), HttpStatus.BAD_REQUEST);
+      return new ResponseEntity<Message>(new Message("The user with email [ " + newUser.getEmail() + " ] is already registered"), HttpStatus.BAD_REQUEST);
     }
     User user = new User(newUser.getName(), newUser.getUsername(), newUser.getEmail(), passwordEncoder.encode(newUser.getPassword()));
 
     Set<Role> roles = new HashSet<>();
 
-    roles.add(roleService.getByRoleName(RoleName.ROLE_USER).get());
+    if(newUser.getRoles().isEmpty() || newUser.getRoles().contains("user"))
+        roles.add(roleService.getByRoleName(RoleName.ROLE_USER).get());
 
-    if (newUser.getRoles().contains("admin"))
-      roles.add(roleService.getByRoleName(RoleName.ROLE_ADMIN).get());
+    if(newUser.getRoles().contains("admin"))
+          roles.add(roleService.getByRoleName(RoleName.ROLE_ADMIN).get());
 
     user.setRoles(roles);
     
@@ -78,10 +81,12 @@ public class AuthController {
   }
   
   @PostMapping(value="/login")
-  public ResponseEntity<?> login(@Valid @RequestBody UserLogin userLogin, BindingResult bindingResult) { 
+  public ResponseEntity<?> login(@Valid @RequestBody UserLogin userLogin, BindingResult bindingResult) {
     if(bindingResult.hasErrors()) {
-      return new ResponseEntity<Message>(new Message("Invalid User"), HttpStatus.UNAUTHORIZED);
+      return new ResponseEntity<Message>(new Message("Username and password are required"), HttpStatus.UNAUTHORIZED);
     }
+
+    try {
       Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLogin.getUsername(), userLogin.getPassword()));
 
       SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -90,6 +95,9 @@ public class AuthController {
       JwtDTO jwtDTO = new JwtDTO(jwt);
 
       return new ResponseEntity<JwtDTO>(jwtDTO, HttpStatus.ACCEPTED);
+    } catch(AuthenticationException e) {
+        return new ResponseEntity<Message>(new Message("Wrong username or password"), HttpStatus.UNAUTHORIZED);
+    }
 
 
   }

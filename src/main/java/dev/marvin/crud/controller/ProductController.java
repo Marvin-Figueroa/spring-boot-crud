@@ -3,16 +3,19 @@ package dev.marvin.crud.controller;
 import dev.marvin.crud.dto.Message;
 import dev.marvin.crud.dto.ProductDTO;
 import dev.marvin.crud.entity.Product;
+import dev.marvin.crud.exception.ResourceNotFoundException;
 import dev.marvin.crud.service.ProductService;
 
+import jakarta.validation.Valid;
 import org.apache.commons.lang3.StringUtils;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/products")
@@ -28,34 +31,30 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProductById(@PathVariable("id") int id) {
-        if(!productService.existsById(id)) {
-            return new ResponseEntity<>(new Message("The requested product does not exist"), HttpStatus.NOT_FOUND);
-        }
-        Product product = productService.getProduct(id).get();
+    public ResponseEntity<Product> getProductById(@PathVariable("id") int id) {
+        var product = productService.getProduct(id)
+                .orElseThrow(() -> new ResourceNotFoundException("The product with the id [ " + id + " ] does not exist"));;;
         return new ResponseEntity<>(product, HttpStatus.OK);
     }
 
     @GetMapping("/name/{name}")
-    public ResponseEntity<?> getProductByName(@PathVariable("name") String name) {
-        if(!productService.existsByName(name)) {
-            return new ResponseEntity<>(new Message("The product with the name " + name + " does not exist"), HttpStatus.NOT_FOUND);
-        }
-        Product product = productService.getProductByName(name).get();
+    public ResponseEntity<Product> getProductByName(@PathVariable("name") String name) {
+        var product = productService.getProductByName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("The product with the name [ " + name + " ] does not exist"));;
         return new ResponseEntity<>(product, HttpStatus.OK);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("")
-    public ResponseEntity<Message> createProduct(@RequestBody ProductDTO productDTO) {
-        if(StringUtils.isBlank(productDTO.getName())) {
-            return new ResponseEntity<>(new Message("The product name is required"), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Message> createProduct(@Valid @RequestBody ProductDTO productDTO, BindingResult  bindingResult) {
+        if(bindingResult.hasErrors()) {
+            return new ResponseEntity<>(new Message("The product name and price are required"), HttpStatus.BAD_REQUEST);
         }
-        if(productDTO.getPrice() == null || productDTO.getPrice() <= 0) {
-            return new ResponseEntity<>(new Message("The product price is required and must be greater than 0"), HttpStatus.BAD_REQUEST);
+        if(productDTO.getPrice() <= 0) {
+            return new ResponseEntity<>(new Message("The product price must be greater than 0"), HttpStatus.BAD_REQUEST);
         }
         if(productService.existsByName(productDTO.getName())) {
-            return new ResponseEntity<>(new Message("The product with the name " + productDTO.getName() + " already exists"), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new Message("The product with the name [ " + productDTO.getName() + " ] already exists"), HttpStatus.BAD_REQUEST);
         }
 
         Product product = new Product(productDTO.getName(), productDTO.getPrice());
@@ -67,19 +66,25 @@ public class ProductController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<Message> updateProduct(@PathVariable("id") int id, @RequestBody ProductDTO productDTO) {
+    public ResponseEntity<Message> updateProduct(@PathVariable("id") int id, @Valid @RequestBody ProductDTO productDTO, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            return new ResponseEntity<>(new Message("The product name and price are required"), HttpStatus.BAD_REQUEST);
+        }
 
         if(!productService.existsById(id)) {
-            return new ResponseEntity<>(new Message("The product with the id " + id + " does not exist"), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new Message("The product with the id [ " + id + " ] does not exist"), HttpStatus.NOT_FOUND);
         }
+
         if(StringUtils.isBlank(productDTO.getName())) {
             return new ResponseEntity<>(new Message("The product name is required"), HttpStatus.BAD_REQUEST);
         }
-        if(productDTO.getPrice() == null || productDTO.getPrice() <= 0) {
-            return new ResponseEntity<>(new Message("The product price is required and must be greater than 0"), HttpStatus.BAD_REQUEST);
+
+        if(productDTO.getPrice() <= 0) {
+            return new ResponseEntity<>(new Message("The product price must be greater than 0"), HttpStatus.BAD_REQUEST);
         }
-        if(productService.existsByName(productDTO.getName()) && productService.getProductByName(productDTO.getName()).get().getId() != id) {
-            return new ResponseEntity<>(new Message("The product with the name " + productDTO.getName() + " already exists"), HttpStatus.BAD_REQUEST);
+
+        if(productService.existsByName(productDTO.getName()) && productService.getProductByName(productDTO.getName()).get().getId() == id) {
+            return new ResponseEntity<>(new Message("The product with the name [ " + productDTO.getName() + " ] already exists"), HttpStatus.BAD_REQUEST);
         }
 
         Product product = productService.getProduct(id).get();
@@ -94,7 +99,7 @@ public class ProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Message> deleteProduct(@PathVariable("id") int id) {
         if(!productService.existsById(id)) {
-            return new ResponseEntity<>(new Message("The product with the id " + id + " does not exist"), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new Message("The product with the id [ " + id + " ] does not exist"), HttpStatus.NOT_FOUND);
         }
         productService.delete(id);
         return new ResponseEntity<>(new Message("The product was deleted successfully"), HttpStatus.OK);
