@@ -2,6 +2,7 @@ package dev.marvin.crud.security.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,6 +16,7 @@ public class NewUser {
     private String name;
     @NotBlank
     private String username;
+    @NotBlank
     @Email
     private String email;
     @NotBlank
